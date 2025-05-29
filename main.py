@@ -100,7 +100,7 @@ class BotGame:
         # Movernos en la direcciñon adecuada, dandole nuestra posicion y la del faro que buscamos
 
         number_of_conquered_lighthouses = sum(1 for lighthouse in turn.Lighthouses if lighthouse.Owner == self.player_num)
-        if number_of_conquered_lighthouses > 15:
+        if number_of_conquered_lighthouses > 20:
             my_lighthouses = [lighthouse for lighthouse in turn.Lighthouses if lighthouse.Owner == self.player_num]
             chosen_lighthouse = my_lighthouses[0]
 
