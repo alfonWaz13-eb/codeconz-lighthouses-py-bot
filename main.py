@@ -123,7 +123,8 @@ class BotGame:
         return ratio
 
     def get_chosen_lighthouse(self, all_lighthouses):
-        return max(all_lighthouses, key=all_lighthouses.get)
+        filtered = {lh: ratio for lh, ratio in all_lighthouses.items() if lh.Owner == self.player_num}
+        return max(filtered, key=filtered.get) if filtered else None
 
     def get_next_movement(self, current_position, target_lighthouse):
         dy = target_lighthouse.Position.Y - current_position.Y
