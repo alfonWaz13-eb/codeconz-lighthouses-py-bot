@@ -99,12 +99,18 @@ class BotGame:
         # Buscar el faro apropiado basado en el ratio
         # Movernos en la direcciñon adecuada, dandole nuestra posicion y la del faro que buscamos
 
-        lighthouses_ratio = {}
-        for lighthouse in turn.Lighthouses:
-            ratio = self.compute_ratio(turn.Position, lighthouse)
-            lighthouses_ratio[(lighthouse.Position.X, lighthouse.Position.Y, lighthouse.Owner)] = ratio
+        number_of_conquered_lighthouses = sum(1 for lighthouse in turn.Lighthouses if lighthouse.Owner == self.player_num)
+        if number_of_conquered_lighthouses > 15:
+            my_lighthouses = [lighthouse for lighthouse in turn.Lighthouses if lighthouse.Owner == self.player_num]
+            chosen_lighthouse = my_lighthouses[0]
 
-        chosen_lighthouse = self.get_chosen_lighthouse(lighthouses_ratio)
+        else:
+            lighthouses_ratio = {}
+            for lighthouse in turn.Lighthouses:
+                ratio = self.compute_ratio(turn.Position, lighthouse)
+                lighthouses_ratio[(lighthouse.Position.X, lighthouse.Position.Y, lighthouse.Owner)] = ratio
+
+            chosen_lighthouse = self.get_chosen_non_conquered_lighthouse(lighthouses_ratio)
         next_movement = self.get_next_movement(turn.Position, chosen_lighthouse)
         move = next_movement
         action = game_pb2.NewAction(
@@ -126,7 +132,7 @@ class BotGame:
         ratio = 1 / ((energy+1) * (distance + 1))
         return ratio
 
-    def get_chosen_lighthouse(self, all_lighthouses):
+    def get_chosen_non_conquered_lighthouse(self, all_lighthouses):
         filtered = {lh: ratio for lh, ratio in all_lighthouses.items() if lh[2] != self.player_num}
         return max(filtered, key=filtered.get) if filtered else None
 
