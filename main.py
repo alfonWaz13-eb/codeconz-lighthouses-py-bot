@@ -1,4 +1,5 @@
 import argparse
+import enum
 import random
 import time
 from concurrent import futures
@@ -9,6 +10,19 @@ from grpc import RpcError
 
 from internal.handler.coms import game_pb2
 from internal.handler.coms import game_pb2_grpc as game_grpc
+
+MOVES = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
+
+
+class Movements(enum.Enum):
+    BOT_LEFT = (-1, -1)
+    LEFT = (-1, 0)
+    TOP_LEFT = (-1, 1)
+    TOP = (0, 1)
+    TOP_RIGHT = (1, 1)
+    RIGHT = (1, 0)
+    BOT_RIGHT = (1, -1)
+    BOT = (0, -1)
 
 timeout_to_response = 1  # 1 second
 
@@ -81,8 +95,14 @@ class BotGame:
                 return action
 
         # Mover aleatoriamente
-        moves = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1))
-        move = random.choice(moves)
+
+        # Buscar el faro apropiado basado en el ratio
+        # Movernos en la direcciñon adecuada, dandole nuestra posicion y la del faro que buscamos
+
+        lighthouses_ratio = {lh: self.compute_ratio(turn.Position, lh) for lh in turn.Lighthouses}
+        chosen_lighthouse = self.get_chosen_lighthouse(lighthouses_ratio)
+        next_movement = self.get_next_movement(turn.Position, chosen_lighthouse)
+        move = next_movement
         action = game_pb2.NewAction(
             Action=game_pb2.MOVE,
             Destination=game_pb2.Position(
@@ -96,6 +116,25 @@ class BotGame:
         self.countT += 1
         return action
 
+    def compute_ratio(self, our_position, lighthouse):
+        energy = lighthouse.Energy
+        distance = abs(our_position.X - lighthouse.Position.X) + abs(our_position.Y - lighthouse.Position.Y)
+        ratio = 1 / ((energy+1) * (distance + 1))
+        return ratio
+
+    def get_chosen_lighthouse(self, all_lighthouses):
+        return max(all_lighthouses, key=all_lighthouses.get)
+
+    def get_next_movement(self, current_position, target_lighthouse):
+        dy = target_lighthouse.Position.Y - current_position.Y
+        dx = target_lighthouse.Position.X - current_position.X
+        if dy > 0:
+            return Movements.TOP.value
+        elif dy < 0:
+            return Movements.BOT.value
+        elif dx > 0:
+            return Movements.RIGHT.value
+        return Movements.LEFT.value
 
 class BotComs:
     def __init__(self, bot_name, my_address, game_server_address, verbose=False):
